@@ -1,10 +1,59 @@
+#ifndef SIM_UTIL_CONFIG_H
+#define SIM_UTIL_CONFIG_H
+
+
+#include <string>
+#include <vector>
+#include <stdint.h>		// integer types like uint8_t
+
+namespace sim{
+
+class Config{
+private:
+	Config* parent;
+	int depth;
+
+	Config* build_key_path(const char* key);
+	Config* add_child(const char* key, const char* val="", int lineno=0);
+	const Config* find_child(const char *key) const;
+public:
+	Config(const char* key = NULL, const char* val = NULL);
+	~Config();
+
+	static Config* load(const char* filename);
+	int save(FILE* fp) const;
+	int save(const char* filename) const;
+
+	std::vector<Config* > children;
+	std::string key;
+	std::string val;
+
+	Config* set(const char* key, const char* val);
+	const Config* get(const char* key) const;
+	int num() const;
+	int get_num(const char* key) const;
+	int64_t get_int64(const char* key) const;
+	const char* str() const;
+	const char* get_str(const char* key) const;	// const修饰返回值，参数，成员函数
+
+	bool is_comment() const{
+		return key[0] == '#';	// 注释
+	}
+	std::string ToString() const{
+		return key + ": " + val;	// 形式，
+	}
+};
+};
+
+#endif
+
 /*
 Copyright (c) 2012-2014 The SSDB Authors. All rights reserved.
 Use of this source code is governed by a BSD-style license that can be
 found in the LICENSE file.
 */
-#ifndef SIM_UTIL__CONFIG_H
-#define SIM_UTIL__CONFIG_H
+#ifndef SIM_UTIL_CONFIG_H
+#define SIM_UTIL_CONFIG_H
 
 /*
 语法定义:

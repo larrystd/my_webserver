@@ -1,3 +1,21 @@
+#ifndef UTIL_FDE_H
+#define UTIL_FED_H
+
+#include <errno.h>
+#include <vector>
+
+#ifdef __linux__
+	#define HAVE_EPOLL 1
+#endif
+
+#ifdef HAVE_EPOLL
+	#include <sys/epoll.h>
+#else
+	#include <sys/select.h>
+#endif
+
+#endif
+
 /*
 Copyright (c) 2012-2014 The SSDB Authors. All rights reserved.
 Use of this source code is governed by a BSD-style license that can be

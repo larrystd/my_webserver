@@ -1,3 +1,151 @@
+#include "log.h"
+#include <algorithm>
+
+static Logger logger;
+
+int log_open(FILE* fp, int level, bool is_threadsafe){
+	return logger.open(fp,level,is_threadsafe);
+}
+
+int log_open(const char *filename, int level, bool is_threadsafe, uint64_t rotate_size){
+	return logger.open(filename, level, is_threadsafe, rotate_size);
+}
+
+int log_level(){
+	return logger.level();
+}
+
+void set_log_level(int level){
+	logger.set_level(level);
+}
+
+void set_log_level(const char *s){
+	std::string ss(s);
+	std::transform(ss.begin(), ss.end(), ss.begin(), ::tolower);
+	int level = Logger::LEVEL_DEBUG;
+	if(ss == "fatal"){
+		level = Logger::LEVEL_FATAL;
+	}else if(ss == "error"){
+		level = Logger::LEVEL_ERROR;
+	}else if(ss == "warn"){
+		level = Logger::LEVEL_WARN;
+	}else if(ss == "info"){
+		level = Logger::LEVEL_INFO;
+	}else if(ss == "debug"){
+		level = Logger::LEVEL_DEBUG;
+	}else if(ss == "trace"){
+		level = Logger::LEVEL_TRACE;
+	}
+	logger.set_level(level);
+}
+
+int log_write(int level, const char* fmt, ...){
+	va_list ap;
+	va_start(ap,fmt);
+	int ret = logger.logv(level, fmt, ap);
+	va_end(ap);
+	return ret;
+}
+
+Logger* Logger::shared(){
+	return &logger;
+}
+
+Logger::Logger(){
+	fp = stdout;
+	level_ = LEVEL_DEBUG;
+	mutex = NULL;
+
+	filename[0] = '\0';
+	rotate_size_ = 0;
+	stats.w_curr = 0;
+	stats.w_total = 0;
+}
+
+Logger::~Logger(){
+	if(mutex){
+		pthread_mutex_destroy(mutex);
+		free(mutex);
+	}
+	this->close();
+}
+
+
+std::string Logger::level_name(){
+	switch(level_){
+		case Logger::LEVEL_FATAL:
+			return "fatal";
+		case Logger::LEVEL_ERROR:
+			return "error";
+		case Logger::LEVEL_WARN:
+			return "warn";
+		case Logger::LEVEL_INFO:
+			return "info";
+		case Logger::LEVEL_DEBUG:
+			return "debug";
+		case Logger::LEVEL_TRACE:
+			return "trace";
+	}
+	return "";
+}
+
+std::string Logger::output_name(){
+	return filename;
+}
+
+uint64_t Logger::rotate_size(){
+	return rotate_size_;
+}
+
+void Logger::threadsafe(){
+	if (mutex){
+		pthread_mutex_destroy(mutex);
+		free(mutex);
+		mutex = NULL;
+	}
+	mutex = (pthread_mutex_t* )malloc(sizeof(pthread_mutex_t));
+	pthread_mutex_init(mutex, NULL);
+}
+
+int Logger::open(FILE* fp, int level, bool is_threadsafe){
+	this->fp = fp;
+	this->level_ = level;
+	if (is_threadsafe){
+		this->threadsafe();
+	}
+	return 0;
+}
+
+int Logger::open(const char* filename, int level, bool is_threadsafe, uint64_t rotate_size){
+	if (strlen(filename) > PATH_MAX - 20){
+		fprintf(stderr, "log filename too long!");
+	}
+	this->level_ = level;
+	this->rotate_size_ = rotate_size;
+	strcpy(this->filename, filename);
+
+	FILE* fp;
+	if (strcmp(filename, "stdout") == 0){
+		fp = stdout;
+	}else if(strcmp(filename, "stderr") == 0){
+		fp = stderr;
+	}else {
+		fp = fopen(filename, "a");	
+		if (fp == NULL){
+			return -1;
+		}
+
+		struct stat st;
+		int ret = fstat(fileno(fp), &st);
+		if (ret == -1){
+			fprintf(stderr, "fstat log file %s error", filename);
+		}else{
+			stats.w_curr = st.st_size;
+		}
+	}
+	return this->open(fp,level, is_threadsafe);
+}
+
 /*
 Copyright (c) 2012-2014 The SSDB Authors. All rights reserved.
 Use of this source code is governed by a BSD-style license that can be
