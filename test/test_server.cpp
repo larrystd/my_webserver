@@ -21,6 +21,7 @@ private:
 //	return ok();
 //}
 
+// 关闭链接
 sim::HandlerState ThreadHandler::close(const sim::Session &sess){
 	Locking l(&mutex);
 	sessions.erase(sess.id);
@@ -60,6 +61,7 @@ void* ThreadHandler::_run_thread(void *arg){
 	return NULL;
 }
 
+// 处理信息，结果封装成resp对象
 sim::HandlerState ThreadHandler::proc(const sim::Request &req, sim::Response *resp){
 	std::string cmd = req.msg.type();
 	

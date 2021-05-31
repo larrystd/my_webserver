@@ -1,5 +1,71 @@
-#ifndef SIM_LINK_H_
-#define SIM_LINK_H_
+#ifndef SIM_LINK_H
+#define SIM_LINK_H
+
+#include <string>
+#include <vector>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include "decoder.h"
+
+namespace sim{
+
+class Link{
+private:
+	int sock;	
+	bool noblock_;
+	bool error_;
+	Decoder decode_;
+	Link(bool is_server=false);
+
+public:
+	std::string output;	// 缓冲
+	char remote_ip[INET_ADDRSTRLEN];	// addrstrlen
+	int remote_port;
+
+	double create_time;
+	double active_time;
+
+	~Link();
+	void close();
+	void nodelay(bool enable=true);
+	void noblock(bool enable=true);
+	void keepalive(bool enable=true);
+
+	int fd() const{
+		return sock;
+	}
+
+	bool error() const{
+		return error_;
+	}
+
+	void mark_error(){
+		error_ = true;
+	}
+
+	static Link* connect(const char* ip, int port);
+	static Link* connect(const std::string& ip, int port);
+	static Link* listen(const char* ip, int port);
+	static Link* listen(const std::string* ip, int port);
+	Link* accept();
+
+	int read();
+	int write();
+
+	int flush();
+
+	int recv(Message* msg);
+	int send(const Message& msg);
+};
+
+};	// namespace sim
+
+#endif
+
+#ifndef SIM_LINK_H
+#define SIM_LINK_H
 
 #include <string>
 #include <vector>

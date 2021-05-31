@@ -24,9 +24,10 @@ public:
 	int loop_once();
 
 private:
-	Fdevents* fdes;
+	Fdevents* fdes;	// 是事件的集合
 	Link* serv_link;
 	int link_count;
+	
 	std::map<int64_t, Session* > sessions;
 	std::vector<Handler* > handlers;
 

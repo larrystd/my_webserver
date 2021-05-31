@@ -21,10 +21,11 @@ int main(int argc, char **argv){
 	
 	sim::Decoder decoder;
 	for(int i=0; i<2000; i++){
-		// 模拟从网络读取数据, 一次只读取一个字节
+		// 模拟从网络读取数据, 一次只读取一个字节，先push到decoder中
 		decoder.push(s.data() + (i%s.size()), 1);
 		
 		while(1){
+			// 利用decoder处理msg，用msg维护返回的数据
 			sim::Message tmp;
 			int ret = decoder.parse(&tmp);
 			if(ret == -1){

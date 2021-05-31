@@ -1,5 +1,98 @@
-#ifndef SIM_HANDLER_H_
-#define SIM_HANDLER_H_
+#ifndef SIM_HANDLER_H
+#define SIM_HANDLER_H
+
+#include "link.h"
+#include "message.h"
+
+template <class T>
+class SelectableQueue;	// 声明是告诉编译器一些信息，以协助编译器进行语法分析，避免编译器报错。 
+
+namespace sim{
+
+class Session{
+public:
+	int64_t id;
+	Link* link;
+
+	Session(){
+		static int64_t inc = 0;	// 静态变量
+		this->id = inc++;
+		this->link = NULL;
+	}
+	~Session(){
+
+	}
+};
+
+class Request{
+public:
+	Message msg;
+	Session sess;
+
+	double stime;
+	double time_wait;
+	double time_proc;
+};
+
+class Response{
+public:
+	Message msg;
+	Session sess;
+};
+
+typedef enum{
+	HANDLE_OK = 0,
+	HANDLE_FAIL = -1,
+	HANDLE_RESP = 1
+}HandlerState;
+
+class Handler{
+public:
+	Handler();
+	virtual ~Handler() {};
+
+	// 有客户端传来时被调用，若返回HANDLE_FAIL,连接被关闭
+	virtual HandlerState accept(const Session& sess);
+	// 当客户端被关闭，此方法被调用
+	virtual HandlerState close(const Session& sess);
+
+	// 当客户端请求报文，调用此方法
+	// 若相应返回给客户端，将响应加到resp中，返回HANDLE_RESP
+	virtual HandlerState proc(const Request& req, Response* resp);
+
+	virtual int init(){return 0; }
+	virtual int free(){return 0; }
+
+		// 此方法默认返回异步响应队列的 fd, 你可以重写此方法, 返回你自己的 fd.
+	virtual int fd();
+	
+	// 当 fd() 有可读事件时, 本函数被调用.
+	// 如果此方法有响应需要立即返回, 请返回 Response 实例, 外面会负责释放内存.
+	// 如无响应, 返回 NULL.
+	virtual Response* handle();
+
+protected:
+	// 将异步相应加入到队列中，该相应发送给客户端
+
+	void async_send(Response* resp);
+	HandlerState ok(){ return HANDLE_OK; };
+	HandlerState fail(){ return HANDLE_FAIL; };
+	HandlerState resp(){ return HANDLE_RESP; };
+
+private:
+	SelectableQueue<Response* >* resps;
+
+	int m_init();
+	int m_free();
+	friend class Server;
+};
+
+};	// namespace sim
+
+#endif
+
+#ifndef SIM_HANDLER_H
+#define SIM_HANDLER_H
 
 #include "link.h"
 #include "message.h"

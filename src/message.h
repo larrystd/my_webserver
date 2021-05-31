@@ -1,5 +1,5 @@
-#ifndef SIM_MESSAGE_H_
-#define SIM_MESSAGE_H_
+#ifndef SIM_MESSAGE_H
+#define SIM_MESSAGE_H
 
 #include <stdint.h>
 #include <inttypes.h>

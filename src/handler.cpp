@@ -5,7 +5,7 @@
 namespace sim{
 
 int Handler::m_init(){
-	resps = new SelectableQueue<Response *>();
+	resps = new SelectableQueue<Response *>();	// 响应队列
 	return this->init();
 }
 
